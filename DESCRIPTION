@@ -1,0 +1,8 @@
+Package: neusRpath
+Title: Northeast U.S. Rpath Models
+Description: Data package containing Gulf of Maine, Georges Bank, and Mid Atlantic Bight Rpath models for the Northeast U.S.
+Version: 0.0.0.9000
+License: MIT + file LICENSE
+Authors@R: person("Max", "Grezlik", role = c("aut", "cre"), email = "your.email@noaa.gov")
+URL: https://github.com/MGrezlik/READ-EDAB-neusRpath
+BugReports: https://github.com/MGrezlik/READ-EDAB-neusRpath/issues
