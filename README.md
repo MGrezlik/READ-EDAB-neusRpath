@@ -1,9 +1,8 @@
-# Northeast ESP Template
+# Northeast U.S. Rpath models
 
-This repository serves as a template for creating R projects for each stock-specific ESP.
-This repository should be cloned and named for the intended ESP (for example, 'bsbESP' or 'longfinESP'), then transferred to the NEFSC Github organization.
+This repository makes available the Rpath models of the Northeast U.S.
 
-The template contains the following folders:
+The repository contains the following folders:
 
 ### 01_inputs
 
