@@ -9,3 +9,4 @@ BugReports: https://github.com/MGrezlik/READ-EDAB-neusRpath/issues
 Depends: 
     R (>= 3.5)
 LazyData: true
+RoxygenNote: 7.3.2
