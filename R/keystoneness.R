@@ -64,5 +64,12 @@ keystoneness <- function(epu = c("GB", "GOM", "MAB")) {
     stringsAsFactors = FALSE
   )
   
+  # Attach EPU label as an attribute
+  attr(results, "epu") <- switch(epu,
+                                 GB  = "Georges Bank",
+                                 GOM = "Gulf of Maine",
+                                 MAB = "Mid Atlantic Bight"
+  )
+  
   return(results)
 }

@@ -25,6 +25,9 @@ plot_keystoneness <- function(ks_results, top_n = 5) {
   library(ggplot2)
   library(dplyr)
   
+  # Grab the EPU name if available
+  epu_name <- attr(ks_results, "epu")
+  
   # Order groups by KS
   plot_df <- ks_results %>%
     arrange(keystoneness) %>%
@@ -36,8 +39,12 @@ plot_keystoneness <- function(ks_results, top_n = 5) {
     geom_col() +
     coord_flip() +
     scale_fill_manual(values = c("Top" = "firebrick", "Other" = "grey70")) +
-    labs(x = "Functional Group", y = "Keystoneness (Libralato et al. 2006)",
-         fill = paste("Top", top_n)) +
+    labs(
+      title = if (!is.null(epu_name)) paste("Keystoneness Index -", epu_name) else NULL,
+      x = "Functional Group",
+      y = "Keystoneness (Libralato et al. 2006)",
+      fill = paste("Top", top_n)
+    ) +
     theme_minimal(base_size = 12)
   
   return(p)
