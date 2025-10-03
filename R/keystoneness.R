@@ -1,70 +1,73 @@
-#' Calculate keystoneness for a Northeast U.S. Rpath model
+#' Calculate keystoneness indices
 #'
-#' Calculates the keystoneness index (KSi) for a given ecosystem model
-#' following Libralato et al. 2006:
-#' KSi = log[epsilon_i * (1 - p_i)],
-#' where epsilon_i is the total impact of group i (from the MTI matrix excluding self-effects)
-#' and p_i is the proportion of total system biomass.
+#' Computes Keystone index #1, #2, #3 and Relative Total Impact (raw and normalized)
+#' for a Northeast U.S. Rpath model, excluding detritus and fleet groups.
 #'
 #' @param epu Character. Ecosystem production unit: "GB", "GOM", or "MAB".
 #' @return A data.frame with ecological groups, biomass, proportion biomass,
-#' total impact, and keystoneness index.
+#' raw and normalized Relative Total Impact, and keystone indices.
 #' @examples
-#' keystoneness("GB")
+#' keystoneness_all("GB")
 #' @export
-keystoneness <- function(epu = c("GB", "GOM", "MAB")) {
+keystoneness_all <- function(epu = c("GB", "GOM", "MAB")) {
   
   epu <- match.arg(epu)
   
   # --- STEP 1: load model and balanced parameters ---
-  data(list = paste0(epu))  # loads GB, GOM, or MAB model into environment
+  data(list = epu)
   model <- get(epu)
   
-  # load balanced parameters
   params_name <- paste0(epu, "_balanced_params")
   data(list = params_name)
   params <- get(params_name)
   
-  # --- STEP 2: Mixed trophic impact matrix ---
-  mti_mat <- Rpath::MTI(Rpath = model, Rpath.params = params)
+  # --- STEP 2: compute MTI matrix using local MTI function ---
+  mti_mat <- MTI(Rpath = model, Rpath.params = params)
   
-  # --- STEP 3: assign group names (ecological groups only) ---
+  # --- STEP 3: filter for living ecological groups only ---
+  eco_rows <- which(params$model$Type < 2)  # living groups only
+  mti_mat <- mti_mat[eco_rows, eco_rows, drop = FALSE]
+  
+  biomass <- model$Biomass[eco_rows]
+  prop_biomass <- biomass / sum(biomass, na.rm = TRUE)
+  
+  # Group names
+  group_names <- model$Group[eco_rows]
   if (!is.null(rownames(model$DC))) {
-    group_names <- rownames(model$DC)
-  } else if (!is.null(model$Group)) {
-    group_names <- model$Group
-  } else {
-    group_names <- paste0("Group", seq_len(nrow(mti_mat)))
+    group_names <- rownames(model$DC)[eco_rows]
   }
   
-  # exclude fishing gear groups
-  n_eco <- nrow(mti_mat) - model$NUM_GEARS
-  mti_mat <- mti_mat[1:n_eco, 1:n_eco]
-  group_names <- group_names[1:n_eco]
+  # --- STEP 4: Relative Total Impact (RTI) ---
+  total_effect <- rowSums(abs(mti_mat), na.rm = TRUE)
+  self_effect  <- diag(abs(mti_mat))
+  rti_raw      <- total_effect - self_effect
+  rti_norm     <- rti_raw / max(rti_raw, na.rm = TRUE)
   
-  # --- STEP 4: compute proportional biomass ---
-  biomass <- model$Biomass[1:n_eco]
-  prop_biomass <- biomass / sum(biomass)
+  # --- STEP 5: Keystone index #1 (Libralato 2006) ---
+  KS1 <- log(rti_raw * (1 - prop_biomass))
   
-  # --- STEP 5: compute total impacts excluding self-effects ---
-  total_effect <- apply(abs(mti_mat), 1, sum)
-  self_effect <- diag(abs(mti_mat))
-  epsilon <- total_effect - self_effect
+  # --- STEP 6: Keystone index #2 (Valls 2015) ---
+  predator_impacts <- rowSums(abs(mti_mat * (mti_mat < 0)), na.rm = TRUE)
+  prey_impacts     <- rowSums(abs(mti_mat * (mti_mat > 0)), na.rm = TRUE)
+  KS2 <- (predator_impacts + prey_impacts) / biomass
   
-  # --- STEP 6: keystoneness (Libralato et al. 2006) ---
-  KS_index <- log(epsilon * (1 - prop_biomass))
+  # --- STEP 7: Keystone index #3 (Valls 2015) ---
+  KS3 <- predator_impacts / biomass
   
-  # --- STEP 7: tidy output ---
+  # --- STEP 8: tidy output ---
   results <- data.frame(
     group = group_names,
     biomass = biomass,
     prop_biomass = prop_biomass,
-    impact = epsilon,
-    keystoneness = KS_index,
+    RTI_raw = rti_raw,
+    RTI_normalized = rti_norm,
+    `Keystone index #1` = KS1,
+    `Keystone index #2` = KS2,
+    `Keystone index #3` = KS3,
     stringsAsFactors = FALSE
   )
   
-  # Attach EPU label as an attribute
+  # Attach EPU label as attribute
   attr(results, "epu") <- switch(epu,
                                  GB  = "Georges Bank",
                                  GOM = "Gulf of Maine",
