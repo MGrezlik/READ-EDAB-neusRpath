@@ -11,7 +11,7 @@ keystoneness_all <- function(epu = c("GB", "GOM", "MAB")) {
   epu <- match.arg(epu)
   
   ## ------------------------------------------------------------------
-  ## Load model and parameters
+  ## Load model and balanced parameters
   ## ------------------------------------------------------------------
   
   data(list = epu, envir = environment())
@@ -22,20 +22,16 @@ keystoneness_all <- function(epu = c("GB", "GOM", "MAB")) {
   params <- get(params_name, envir = environment())
   
   ## ------------------------------------------------------------------
-  ## Compute MTI (Ecopath-consistent)
+  ## Compute MTI using the updated Ecopath-consistent function
   ## ------------------------------------------------------------------
   
-  mti_full <- MTI_new(
-    Rpath        = model,
-    Rpath.params = params
-  )
+  mti_full <- MTI_new(Rpath = model, Rpath.params = params)
   
   ## ------------------------------------------------------------------
   ## Restrict to living groups only
   ## ------------------------------------------------------------------
   
   NUM_LIVING <- model$NUM_LIVING
-  
   mti_living <- mti_full[1:NUM_LIVING, 1:NUM_LIVING, drop = FALSE]
   diag(mti_living) <- 0
   
@@ -43,16 +39,33 @@ keystoneness_all <- function(epu = c("GB", "GOM", "MAB")) {
   group_names <- model$Group[1:NUM_LIVING]
   
   ## ------------------------------------------------------------------
-  ## Overall effect (epsilon_i)
+  ## Overall effect (epsilon_i) for keystoneness
   ## ------------------------------------------------------------------
   
   epsilon_i <- sqrt(rowSums(mti_living^2))
   
   ## ------------------------------------------------------------------
-  ## Relative Total Impact (Ecopath definition)
+  ## Relative Total Impact (Ecopath-style)
   ## ------------------------------------------------------------------
   
-  Rel.Tot <- rowSums(mti_living)
+  # Absolute MTI values
+  mti_abs <- abs(mti_living)
+  
+  # Total effect per group
+  total_effect <- rowSums(mti_abs, na.rm = TRUE)
+  
+  # Self-effect (diagonal)
+  self_effect <- diag(mti_abs)
+  
+  # Raw RTI (exclude self-effect)
+  rti_raw <- total_effect - self_effect
+  
+  # Normalize to 0-1
+  rti <- if (all(is.na(rti_raw)) || max(rti_raw, na.rm = TRUE) == 0) {
+    rep(0, length(rti_raw))
+  } else {
+    rti_raw / max(rti_raw, na.rm = TRUE)
+  }
   
   ## ------------------------------------------------------------------
   ## Keystone indices (Ecopath / Valls)
@@ -62,25 +75,25 @@ keystoneness_all <- function(epu = c("GB", "GOM", "MAB")) {
   p_i <- biomass / sum(biomass)
   
   KS_1 <- log10(pmax(epsilon_i * (1 - p_i), eps))
-  KS_2 <- log10(pmax(epsilon_i * (1 / p_i), eps))
+  KS_2 <- log10(pmax(epsilon_i / p_i, eps))
   
   # Biomass rank (descending)
   drank <- NUM_LIVING - rank(biomass, ties.method = "average") + 1
   KS_3 <- log10(pmax(epsilon_i * drank, eps))
   
   ## ------------------------------------------------------------------
-  ## Output
+  ## Assemble output
   ## ------------------------------------------------------------------
   
   results <- data.frame(
-    group                = group_names,
-    biomass              = biomass,
-    prop_biomass         = p_i,
-    Relative_total_impact = Rel.Tot,
-    Keystone_index_1     = KS_1,
-    Keystone_index_2     = KS_2,
-    Keystone_index_3     = KS_3,
-    stringsAsFactors     = FALSE
+    group                 = group_names,
+    biomass               = biomass,
+    prop_biomass          = p_i,
+    Relative_total_impact = rti,
+    Keystone_index_1      = KS_1,
+    Keystone_index_2      = KS_2,
+    Keystone_index_3      = KS_3,
+    stringsAsFactors      = FALSE
   )
   
   attr(results, "epu") <- switch(
@@ -92,4 +105,5 @@ keystoneness_all <- function(epu = c("GB", "GOM", "MAB")) {
   
   return(results)
 }
+
 

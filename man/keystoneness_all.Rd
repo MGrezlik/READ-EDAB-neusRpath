@@ -2,21 +2,17 @@
 % Please edit documentation in R/keystoneness.R
 \name{keystoneness_all}
 \alias{keystoneness_all}
-\title{Calculate keystoneness indices}
+\title{Calculate Ecopath-consistent keystoneness indices}
 \usage{
 keystoneness_all(epu = c("GB", "GOM", "MAB"))
 }
 \arguments{
-\item{epu}{Character. Ecosystem production unit: "GB", "GOM", or "MAB".}
+\item{epu}{Character. "GB", "GOM", or "MAB"}
 }
 \value{
-A data.frame with ecological groups, biomass, proportion biomass,
-raw and normalized Relative Total Impact, and keystone indices.
+data.frame of keystoneness metrics for living groups
 }
 \description{
-Computes Keystone index #1, #2, #3 and Relative Total Impact (raw and normalized)
-for a Northeast U.S. Rpath model, excluding detritus and fleet groups.
-}
-\examples{
-keystoneness_all("GB")
+Computes Keystone indices #1, #2, #3 and Relative Total Impact
+exactly as implemented in Ecopath (Valls et al. + legacy code).
 }
