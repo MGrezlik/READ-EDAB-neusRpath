@@ -1,1 +1,0 @@
-This README file allows git to track this folder even when there are no other files in it.
